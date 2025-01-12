@@ -1,0 +1,163 @@
+# docker-compose.yml (Docker Compose v2+)
+
+services:
+  # -----------------------------------
+  # MySQL Database
+  # -----------------------------------
+  mysql:
+    image: mysql:8.1
+    container_name: vots_mysql
+    restart: unless-stopped
+    environment:
+      # Fallbacks in case the .env file isn't set
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-rag_flow}"
+      MYSQL_USER: "${MYSQL_USER:-ragflowuser}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:-ragflow123}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-mysecretpassword}"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - vots_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # -----------------------------------
+  # Redis
+  # -----------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: vots_redis
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-myredispass}"]
+    ports:
+      - "6379:6379"
+    networks:
+      - vots_network
+
+  # -----------------------------------
+  # Rust Microservice
+  # -----------------------------------
+  rust_service:
+    build:
+      context: ./rust_service
+      # dockerfile: Dockerfile
+        # Uncomment if your file isn’t literally named “Dockerfile”
+    container_name: rust_service
+    restart: unless-stopped
+    ports:
+      - "${RUST_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - vots_network
+
+  # -----------------------------------
+  # Go Microservice
+  # -----------------------------------
+  go_service:
+    build:
+      context: ./go_service
+      # dockerfile: Dockerfile
+    container_name: go_service
+    restart: unless-stopped
+    ports:
+      - "${GO_PORT:-4000}:4000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - vots_network
+
+  # -----------------------------------
+  # C Microservice
+  # -----------------------------------
+  c_service:
+    build:
+      context: ./c_service
+      # dockerfile: Dockerfile
+    container_name: c_service
+    restart: unless-stopped
+    ports:
+      - "${C_PORT:-5000}:5000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - vots_network
+
+  # -----------------------------------
+  # Python Agent
+  # -----------------------------------
+  python_agent:
+    build:
+      context: ./python_agent
+      # dockerfile: Dockerfile
+    container_name: python_agent
+    restart: unless-stopped
+    env_file:
+      - .env   # loads secrets & environment from .env
+    ports:
+      - "${GRADIO_PORT:-8500}:8500"
+      - "${FASTAPI_PORT:-9000}:9000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rust_service:
+        condition: service_healthy
+      go_service:
+        condition: service_healthy
+      c_service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${FASTAPI_PORT:-9000}/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - vots_network
+
+  # -----------------------------------
+  # Next.js Dashboard
+  # -----------------------------------
+  nextjs_dashboard:
+    build:
+      context: ./nextjs_dashboard
+      # dockerfile: Dockerfile
+    container_name: nextjs_dashboard
+    restart: unless-stopped
+    ports:
+      - "${NEXTJS_PORT:-3001}:3000"
+    depends_on:
+      python_agent:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - vots_network
+
+# -----------------------------------
+# Docker Network & Volumes
+# -----------------------------------
+networks:
+  vots_network:
+    driver: bridge
+
+volumes:
+  mysql_data:

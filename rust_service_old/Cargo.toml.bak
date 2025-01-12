@@ -1,0 +1,9 @@
+[package]
+name = "rust_service"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Instead of just "server", use "full" for all hyper features:
+hyper = { version = "0.14", features = ["full"] }
+tokio = { version = "1.32", features = ["rt-multi-thread", "macros"] }
