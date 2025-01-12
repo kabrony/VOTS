@@ -1,0 +1,5 @@
+# .gitignore for VOTS
+.venv/
+.env
+multi_lang_demo_backup.tar.gz
+rust_service_old/
