@@ -3,9 +3,10 @@
 # v15_agi_baby_explained.sh
 #
 # Purpose:
-#   - If DO_FULL_AGI_PIPE=true => HPC + Next.js + optional AI & doc => FULL
-#   - Else => HPC + Next.js only => PARTIAL
-#   - Minimal "[DONE]/[FAILED]" progress lines for each step
+#   If DO_FULL_AGI_PIPE=true => HPC + Next.js + optional AI/doc => FULL pipeline.
+#   Otherwise => HPC + Next.js only => PARTIAL pipeline.
+#
+# Provides minimal "[DONE]/[FAILED]" progress lines.
 #
 # Usage:
 #   chmod +x v15_agi_baby_explained.sh
@@ -19,19 +20,21 @@ START_TIME=$(date +%s)
 TIMESTAMP="$(date +'%Y-%m-%d %H:%M:%S')"
 ERROR_COUNT=0
 
+# Simple logging
 log_info()  { echo -e "\033[34m[INFO]\033[0m  $SCRIPT_NAME => $*"; }
 log_warn()  { echo -e "\033[33m[WARN]\033[0m  $SCRIPT_NAME => $*" >&2; }
 log_error() { echo -e "\033[31m[ERROR]\033[0m $SCRIPT_NAME => $*" >&2; }
 bail_out()  { log_error "$*"; exit 1; }
 
+# CLI args
 COMMIT_MSG="${1:-"auto: system update $TIMESTAMP"}"
 BRANCH="${2:-"main"}"
 
-# HPC & Next.js (override if you want):
+# HPC & Next.js
 HPC_SERVICES="${HPC_SERVICES:-"c_service go_service python_agent rust_service"}"
 NEXTJS_SERVICE="${NEXTJS_SERVICE:-"nextjs_dashboard"}"
 
-# Determine pipeline mode:
+# Determine pipeline mode
 if [[ "${DO_FULL_AGI_PIPE:-false}" == "true" ]]; then
   log_info "DO_FULL_AGI_PIPE=true => FULL pipeline (AGI baby) mode."
   AGI_MODE=true
@@ -54,7 +57,7 @@ progress_step() {
 
 log_info "GIT => branch: '$BRANCH', commit_msg: '$COMMIT_MSG'"
 
-# 1) Git
+# (1) Git fetch & checkout
 progress_step "Fetching origin..."       git fetch origin
 progress_step "Checking out => $BRANCH" git checkout "$BRANCH" || bail_out "Cannot checkout branch: $BRANCH"
 
@@ -64,7 +67,7 @@ if ! git pull --rebase origin "$BRANCH"; then
   git pull origin "$BRANCH" || log_warn "git merge also failed"
 fi
 
-# 2) Collect changed files
+# (2) Collect changed files
 log_info "Collecting changed files => HEAD~1..HEAD"
 CHANGED_FILES="$(git diff --name-only HEAD~1..HEAD || true)"
 
@@ -77,7 +80,7 @@ is_changed() {
   fi
 }
 
-# 3) HPC Rebuild
+# (3) HPC Rebuild
 log_info "Building HPC services (sequential; concurrency possible w/ & and wait)..."
 
 rebuild_service() {
@@ -111,10 +114,10 @@ for hpc_svc in $HPC_SERVICES; do
   rebuild_service "$hpc_svc" "$hpc_svc"
 done
 
-# 4) Next.js
+# (4) Next.js
 rebuild_service "$NEXTJS_SERVICE" "$NEXTJS_SERVICE"
 
-# 5) Optional AI/doc if FULL
+# (5) Optional AI/doc steps if FULL
 if $AGI_MODE; then
   # AI refactor
   if [[ "${ENABLE_AI_REFACTOR:-false}" == "true" && -f "${AI_REFACTOR_SCRIPT:-}" ]]; then
@@ -127,6 +130,7 @@ if $AGI_MODE; then
       echo "[DONE]"
     fi
   fi
+
   # Doc analysis
   if [[ "${ENABLE_DOC_ANALYSIS:-false}" == "true" && -f "${DOC_ANALYSIS_SCRIPT:-}" ]]; then
     log_info "Doc analysis => ${DOC_ANALYSIS_SCRIPT}"
@@ -142,7 +146,7 @@ else
   log_info "Skipping AI refactor & doc analysis => partial pipeline."
 fi
 
-# 6) Stage & commit
+# (6) Stage & commit
 echo -n "Staging => git add . "
 if git add .; then
   echo "[DONE]"
@@ -158,7 +162,7 @@ else
   echo "[NO CHANGES TO COMMIT]"
 fi
 
-# 7) Push
+# (7) Push
 echo -n "Pushing => origin/$BRANCH "
 if git push origin "$BRANCH"; then
   echo "[DONE]"
@@ -167,7 +171,7 @@ else
   ((ERROR_COUNT++))
 fi
 
-# 8) Final summary
+# (8) Final summary
 DURATION=$(( $(date +%s) - START_TIME ))
 log_info "Deployment => finished in ${DURATION}s => $ERROR_COUNT errors => $( [[ $ERROR_COUNT -eq 0 ]] && echo success || echo 'check logs' )"
 
