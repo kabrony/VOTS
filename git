@@ -1,0 +1,56 @@
+# cat vots_setup.sh
+#!/usr/bin/env bash
+set -e
+
+###############################################################################
+# VOTS // DYSTOLABS SETUP SCRIPT
+#
+# This script will:
+#  1) Backup any existing 'docker-compose.yml'
+#  2) Pull/update your git repo (optional, if you keep your code in Git)
+#  3) Build all services with --no-cache
+#  4) Spin them up in detached mode
+#  5) Print final status/log instructions
+#
+# Usage:
+#   chmod +x vots_setup.sh
+#   ./vots_setup.sh
+#
+# NOTE:
+#  - Adapt the 'git pull' step if desired (or remove if not using Git).
+#  - Ensure you have a valid .env with necessary secrets & env variables.
+###############################################################################
+
+# 1) Backup docker-compose.yml
+if [ -f docker-compose.yml ]; then
+  TIMESTAMP=$(date +%s)
+  cp docker-compose.yml docker-compose.yml.bak_$TIMESTAMP
+  echo "[INFO] Backed up 'docker-compose.yml' -> 'docker-compose.yml.bak_$TIMESTAMP'"
+fi
+
+# 2) (Optional) Pull latest from Git (comment out if not needed)
+if [ -d .git ]; then
+  echo "[INFO] Pulling latest changes from Git..."
+  git pull --rebase
+else
+  echo "[INFO] No .git folder detected, skipping 'git pull'."
+fi
+
+# 3) Build all services with --no-cache
+echo "[INFO] Building all Docker services with '--no-cache'..."
+docker compose build --no-cache
+
+# 4) Spin up in detached mode
+echo "[INFO] Spinning containers up in detached mode..."
+docker compose up -d
+
+# 5) Print logs/health info
+echo "[DONE] Setup complete. Check logs with:"
+echo "       docker compose logs -f python_agent"
+echo "       docker compose logs -f nextjs_dashboard"
+echo "       # etc..."
+
+echo "[INFO] If you need to confirm Chroma or SQLite versions, you can run scripts like:"
+echo "       ./Check_Sqlite.sh"
+echo
+echo "VOTS // DYSTOLABS is now running."

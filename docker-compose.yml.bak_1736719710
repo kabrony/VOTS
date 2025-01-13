@@ -1,13 +1,7 @@
 ###############################################################################
 # Docker Compose (Compose v2+)
-# VOTS Multi-Service: 
-#   - Python agent (with fastapi + openai + google-genai + chromadb + gradio)
-#   - C microservice (optional)
-#   - Go microservice (optional)
-#   - Next.js Dashboard
-#   - Chroma container (image: chromadb/chroma:latest)
-#   - local Mongo container (optional)
-#
+# VOTS Multi-Service: Python, C, Go, Next.js, Chroma, optional local Mongo
+###############################################################################
 # Keep in mind your .env should contain:
 #   OPENAI_API_KEY, GEMINI_API_KEY, MONGO_URI, etc.
 # If using DigitalOcean Mongo, just comment out `vots_mongo`.
@@ -27,12 +21,12 @@ services:
       - vots_network
     ports:
       - "9000:9000"    # FastAPI port
-      - "8500:8500"    # Gradio or second UI port
+      - "8500:8500"    # e.g., Gradio or any second UI port
     depends_on:
       - c_service
       - go_service
-      - chroma_service
-      - vots_mongo
+      - chroma_service    # comment out if you don't use containerized Chroma
+      - vots_mongo        # comment out if you only use DO remote Mongo
 
   ######################################################################
   # 2) C Microservice
@@ -47,6 +41,12 @@ services:
       - vots_network
     ports:
       - "${C_PORT:-5000}:5000"
+    # Optionally add healthcheck if your code has /health route
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+    #   interval: 15s
+    #   timeout: 5s
+    #   retries: 3
 
   ######################################################################
   # 3) Go Microservice
@@ -61,6 +61,11 @@ services:
       - vots_network
     ports:
       - "${GO_PORT:-4000}:4000"
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+    #   interval: 15s
+    #   timeout: 5s
+    #   retries: 3
 
   ######################################################################
   # 4) Next.js Dashboard
@@ -78,12 +83,13 @@ services:
     depends_on:
       python_agent:
         condition: service_started
+    # You can also do condition: service_healthy if python_agent has healthcheck
 
   ######################################################################
   # (Optional) 5) Chroma container
   ######################################################################
   chroma_service:
-    image: chromadb/chroma:latest
+    image: chromadb/chroma:0.3.26
     container_name: chroma_service
     networks:
       - vots_network
@@ -92,11 +98,14 @@ services:
       CHROMA_PERSIST_DIRECTORY: "/data"
     volumes:
       - chroma_data:/data
+    # By default, it listens on port 8000 internally
+    # If you need to expose externally, do this:
     ports:
       - "8000:8000"
 
   ######################################################################
   # (Optional) 6) local Mongo container
+  # If you prefer DigitalOcean remote, comment out & set MONGO_URI in .env
   ######################################################################
   vots_mongo:
     image: mongo:6
@@ -109,6 +118,9 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: mysecret
     ports:
       - "27017:27017"
+    # If you want a volume for data:
+    # volumes:
+    #   - mongo_data:/data/db
 
 networks:
   vots_network:
@@ -118,6 +130,5 @@ networks:
 volumes:
   chroma_data:
     driver: local
-  # If you want a volume for local Mongo data:
   # mongo_data:
   #   driver: local

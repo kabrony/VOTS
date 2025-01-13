@@ -1,12 +1,9 @@
 # syntax=docker/dockerfile:1
-FROM rust:latest AS builder
-# or FROM rust:1.74-slim if that exists in the future
-
+FROM rust:1.84 as builder
 WORKDIR /app
 COPY Cargo.toml Cargo.lock ./
 RUN mkdir src && echo "fn main() {}" > src/main.rs
 RUN cargo build --release
-
 COPY src ./src
 RUN cargo build --release
 

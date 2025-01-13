@@ -1,4 +1,5 @@
 # syntax=docker/dockerfile:1
+
 FROM ubuntu:22.04 as builder
 RUN apt-get update && apt-get install -y build-essential libmicrohttpd-dev
 WORKDIR /app
@@ -6,8 +7,8 @@ COPY main.c ./
 RUN gcc main.c -o c_service -lmicrohttpd
 
 FROM ubuntu:22.04
-RUN apt-get update && apt-get install -y libmicrohttpd-dev
+RUN apt-get update && apt-get install -y libmicrohttpd-dev curl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
-COPY --from=builder /app/c_service /app/c_service
+COPY --from=builder /app/c_service .
 EXPOSE 5000
-CMD ["/app/c_service"]
+CMD ["./c_service"]

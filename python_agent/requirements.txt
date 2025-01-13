@@ -1,5 +1,32 @@
-fastapi==0.103.0
+# ------------- Python Agent Requirements (Pinned) -------------
+# We attempt to unify the conflicting websockets usage between google-genai 0.2.1
+# and Gradio 4.53.0 by forcibly using websockets ~13.x.
+# If you still see conflict, you may need to tweak versions.
+
 uvicorn==0.23.2
 requests==2.31.0
-gradio==4.44.1
 python-dotenv==1.0.0
+
+# Latest openai (as of 2025-01)
+openai==1.59.6
+
+# Google GenAI for hypothetical Gemini 2.0 usage
+google-genai==0.2.1
+
+# Chroma, pinned at 0.4.13
+chromadb==0.4.13
+
+# Gradio pinned at 4.53.0
+# (One of the more recent versions that hopefully won't fully break websockets)
+gradio==5.12.0
+
+# LangChain pinned for consistent usage
+langchain==0.0.320
+
+# Pydantic pinned for consistency with above packages
+pydantic==2.3.0
+
+# Tiktoken for token counting in LLM usage
+tiktoken==0.6.0
+
+# Additional forced pins to help unify websockets:
