@@ -246,8 +246,8 @@ __webpack_require__.r(__webpack_exports__);
 
 function HomePage() {
     // Sample usage of the env variables
-    const openAiKey = "sk-svcacct--IKTSC9rfHHSrSfeXI0r1CTLGctSzpTAeY4twKf0algyb3h1KnOTdvCnd5bTPUeNFT3BlbkFJoAv5uuDE_Bvzy29K6LxJBJIr3jha2rdVMg6CRlg7YwrkGHuilY8xIBFzxuqeTmWAAOZX";
-    const geminiKey = "AIzaSyCoaDruS_LQBvgFFD46jiSINB6aLODC7Xk";
+    const openAiKey = "";
+    const geminiKey = "";
     const mongoUri = "";
     return /*#__PURE__*/ (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxs)("div", {
         className: "min-h-screen bg-gray-900 text-gray-100 flex flex-col items-center justify-center p-8",
