@@ -44,7 +44,6 @@
 #   DECRYPT_CMD="gpg -d secrets.enc"
 #   LOG_TAIL_LINES=30      # how many lines to tail for logs
 #   LOG_ERROR_PATTERN="(ERROR|FATAL|panic)"  # pattern to match in logs
-#   ...
 #
 # Disclaimer:
 #   - Real "AGI" or "ASI" logic requires extensive AI code far beyond this script.
@@ -92,7 +91,7 @@ if [[ "${ENABLE_MAINTENANCE_WINDOW_CHECK:-false}" == "true" ]]; then
   mw_end="${MAINTENANCE_WINDOW_END:-"04:00"}"
   if [[ "$current_time" < "$mw_start" || "$current_time" > "$mw_end" ]]; then
     log_warn "Currently $current_time => outside maintenance window ($mw_start-$mw_end)."
-    # Optionally bail out or continue
+    # Optionally bail_out or just continue
     # bail_out "Deployment aborted => not in window."
   else
     log_info "Within maintenance window ($mw_start-$mw_end). Proceeding."
@@ -106,7 +105,7 @@ ENCRYPTED_SECRETS_FILE="${ENCRYPTED_SECRETS_FILE:-"./secrets.enc"}"
 DECRYPT_CMD="${DECRYPT_CMD:-"cat $ENCRYPTED_SECRETS_FILE"}"
 if [[ -f "$ENCRYPTED_SECRETS_FILE" ]]; then
   log_info "Decrypting secrets => $ENCRYPTED_SECRETS_FILE (placeholder)."
-  # Example (in real usage, parse or export secrets):
+  # Real usage example:
   # $DECRYPT_CMD || bail_out "Secrets decryption => fail!"
   # export MY_API_KEY="$(...)"
 else
@@ -214,6 +213,7 @@ build_service() {
 rebuild_if_changed() {
   local svc_name="$1"
   local dir_name="$2"
+  # Check changes in dir_name
   if git diff --quiet HEAD~1 HEAD -- "$dir_name" 2>/dev/null; then
     log_info "No changes => $dir_name => skip $svc_name"
   else
