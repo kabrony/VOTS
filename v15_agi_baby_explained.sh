@@ -3,8 +3,8 @@
 # v15_agi_baby_explained.sh
 #
 # Purpose:
-#   - If DO_FULL_AGI_PIPE=true => HPC + Next.js + optional AI & doc steps => FULL
-#   - Otherwise => HPC + Next.js only => PARTIAL
+#   - If DO_FULL_AGI_PIPE=true => HPC + Next.js + optional AI & doc => FULL
+#   - Else => HPC + Next.js only => PARTIAL
 #   - Minimal "[DONE]/[FAILED]" progress lines for each step
 #
 # Usage:
@@ -31,6 +31,7 @@ BRANCH="${2:-"main"}"
 HPC_SERVICES="${HPC_SERVICES:-"c_service go_service python_agent rust_service"}"
 NEXTJS_SERVICE="${NEXTJS_SERVICE:-"nextjs_dashboard"}"
 
+# Determine pipeline mode:
 if [[ "${DO_FULL_AGI_PIPE:-false}" == "true" ]]; then
   log_info "DO_FULL_AGI_PIPE=true => FULL pipeline (AGI baby) mode."
   AGI_MODE=true
@@ -53,6 +54,7 @@ progress_step() {
 
 log_info "GIT => branch: '$BRANCH', commit_msg: '$COMMIT_MSG'"
 
+# 1) Git
 progress_step "Fetching origin..."       git fetch origin
 progress_step "Checking out => $BRANCH" git checkout "$BRANCH" || bail_out "Cannot checkout branch: $BRANCH"
 
@@ -62,6 +64,7 @@ if ! git pull --rebase origin "$BRANCH"; then
   git pull origin "$BRANCH" || log_warn "git merge also failed"
 fi
 
+# 2) Collect changed files
 log_info "Collecting changed files => HEAD~1..HEAD"
 CHANGED_FILES="$(git diff --name-only HEAD~1..HEAD || true)"
 
@@ -74,7 +77,7 @@ is_changed() {
   fi
 }
 
-# HPC Rebuild
+# 3) HPC Rebuild
 log_info "Building HPC services (sequential; concurrency possible w/ & and wait)..."
 
 rebuild_service() {
@@ -108,11 +111,12 @@ for hpc_svc in $HPC_SERVICES; do
   rebuild_service "$hpc_svc" "$hpc_svc"
 done
 
-# Next.js
+# 4) Next.js
 rebuild_service "$NEXTJS_SERVICE" "$NEXTJS_SERVICE"
 
-# Optional AI/doc if FULL
+# 5) Optional AI/doc if FULL
 if $AGI_MODE; then
+  # AI refactor
   if [[ "${ENABLE_AI_REFACTOR:-false}" == "true" && -f "${AI_REFACTOR_SCRIPT:-}" ]]; then
     log_info "AI refactor => ${AI_REFACTOR_SCRIPT}"
     echo -n "Running AI refactor "
@@ -123,6 +127,7 @@ if $AGI_MODE; then
       echo "[DONE]"
     fi
   fi
+  # Doc analysis
   if [[ "${ENABLE_DOC_ANALYSIS:-false}" == "true" && -f "${DOC_ANALYSIS_SCRIPT:-}" ]]; then
     log_info "Doc analysis => ${DOC_ANALYSIS_SCRIPT}"
     echo -n "Running doc analysis "
@@ -137,7 +142,7 @@ else
   log_info "Skipping AI refactor & doc analysis => partial pipeline."
 fi
 
-# Stage & commit
+# 6) Stage & commit
 echo -n "Staging => git add . "
 if git add .; then
   echo "[DONE]"
@@ -153,7 +158,7 @@ else
   echo "[NO CHANGES TO COMMIT]"
 fi
 
-# Push
+# 7) Push
 echo -n "Pushing => origin/$BRANCH "
 if git push origin "$BRANCH"; then
   echo "[DONE]"
@@ -162,7 +167,7 @@ else
   ((ERROR_COUNT++))
 fi
 
-# Final summary
+# 8) Final summary
 DURATION=$(( $(date +%s) - START_TIME ))
 log_info "Deployment => finished in ${DURATION}s => $ERROR_COUNT errors => $( [[ $ERROR_COUNT -eq 0 ]] && echo success || echo 'check logs' )"
 
