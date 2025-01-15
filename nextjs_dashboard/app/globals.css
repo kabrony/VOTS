@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Optionally set global defaults */
+body {
+  @apply bg-black text-gray-200;
+  margin: 0;
+  padding: 0;
+  font-family: 'SF Mono', 'Menlo', monospace;
+}

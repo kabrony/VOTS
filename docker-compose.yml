@@ -1,21 +1,11 @@
 ###############################################################################
-# Docker Compose (Compose v2+)
-# VOTS Multi-Service: 
-#   - Python agent (with fastapi + openai + google-genai + chromadb + gradio)
-#   - C microservice (optional)
-#   - Go microservice (optional)
-#   - Next.js Dashboard
-#   - Chroma container (image: chromadb/chroma:latest)
-#   - local Mongo container (optional)
-#
-# Keep in mind your .env should contain:
-#   OPENAI_API_KEY, GEMINI_API_KEY, MONGO_URI, etc.
-# If using DigitalOcean Mongo, just comment out `vots_mongo`.
+# Docker Compose - VOTS Full Multi-Service (Extended with LocalAI placeholder)
 ###############################################################################
+
 services:
 
   ######################################################################
-  # 1) Python Agent
+  # 1) Python Agent (synergy + PDF ingestion)
   ######################################################################
   python_agent:
     build:
@@ -26,13 +16,16 @@ services:
     networks:
       - vots_network
     ports:
-      - "9000:9000"    # FastAPI port
-      - "8500:8500"    # Gradio or second UI port
+      - "${FASTAPI_PORT:-9000}:9000"
+      - "${GRADIO_PORT:-8500}:8500"
+    restart: unless-stopped
     depends_on:
       - c_service
       - go_service
-      - chroma_service
+      - rust_service
       - vots_mongo
+      # (Optional) If synergy logic requires localai, uncomment next line:
+      # - localai
 
   ######################################################################
   # 2) C Microservice
@@ -47,6 +40,7 @@ services:
       - vots_network
     ports:
       - "${C_PORT:-5000}:5000"
+    restart: unless-stopped
 
   ######################################################################
   # 3) Go Microservice
@@ -61,9 +55,26 @@ services:
       - vots_network
     ports:
       - "${GO_PORT:-4000}:4000"
+    restart: unless-stopped
 
   ######################################################################
-  # 4) Next.js Dashboard
+  # 4) Rust Microservice
+  ######################################################################
+  rust_service:
+    build:
+      context: ./rust_service
+      dockerfile: Dockerfile
+    container_name: rust_service
+    env_file: .env
+    networks:
+      - vots_network
+    ports:
+      - "${RUST_PORT:-3500}:3000"
+    restart: unless-stopped
+    # depends_on removed to avoid cyclical dependency
+
+  ######################################################################
+  # 5) Next.js Dashboard (port 3001)
   ######################################################################
   nextjs_dashboard:
     build:
@@ -75,28 +86,15 @@ services:
       - vots_network
     ports:
       - "${NEXTJS_PORT:-3001}:3000"
+    restart: unless-stopped
     depends_on:
-      python_agent:
-        condition: service_started
+      - python_agent
+      - rust_service
+      # (Optional) If synergy logic requires localai, uncomment next line:
+      # - localai
 
   ######################################################################
-  # (Optional) 5) Chroma container
-  ######################################################################
-  chroma_service:
-    image: chromadb/chroma:latest
-    container_name: chroma_service
-    networks:
-      - vots_network
-    environment:
-      CHROMA_DB_IMPL: "duckdb+parquet"
-      CHROMA_PERSIST_DIRECTORY: "/data"
-    volumes:
-      - chroma_data:/data
-    ports:
-      - "8000:8000"
-
-  ######################################################################
-  # (Optional) 6) local Mongo container
+  # 6) Mongo container
   ######################################################################
   vots_mongo:
     image: mongo:6
@@ -110,14 +108,27 @@ services:
     ports:
       - "27017:27017"
 
+  ######################################################################
+  # 7) LocalAI container (Optional, CPU-based)
+  #    If synergy logic doesn't require LocalAI, remove this block.
+  ######################################################################
+  localai:
+    image: localai/localai:latest-aio-cpu
+    container_name: localai
+    env_file: .env
+    networks:
+      - vots_network
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+###############################################################################
+# Shared network & volumes
+###############################################################################
 networks:
   vots_network:
-    name: vots_network
     driver: bridge
 
 volumes:
   chroma_data:
     driver: local
-  # If you want a volume for local Mongo data:
-  # mongo_data:
-  #   driver: local

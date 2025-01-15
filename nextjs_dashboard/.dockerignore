@@ -1,0 +1,11 @@
+# Exclude node_modules (we install fresh in Docker)
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Next.js build output
+.next
+out
+
+# OS junk
+.DS_Store

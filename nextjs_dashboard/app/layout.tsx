@@ -1,16 +1,15 @@
+import './globals.css';
+import { ReactNode } from 'react';
+
 export const metadata = {
-  title: "VOTS Next.js Dashboard",
-  description: "Root layout for Next.js 13",
+  title: 'VOTS // Synergy Terminal',
+  description: 'Single-page synergy with Tailwind in Next.js App Router',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body style={{ margin: 0, padding: 0 }}>
+      <body>
         {children}
       </body>
     </html>

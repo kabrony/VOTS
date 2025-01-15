@@ -1,27 +1,60 @@
-# Next.js Dashboard (vots_dashboard)
+# VOTS // Next.js Dashboard
 
-This directory contains the Next.js 13+ dashboard for VOTS.
+This folder holds a **Next.js 13** front-end with synergy chat features, 
+Socket.IO integration, Tailwind, and Puppeteer for advanced use cases.
 
-## Docker Usage
+## Quick Start
 
-1. Build the Docker image:
-   docker compose build --no-cache nextjs_dashboard
+1. **Install** dependencies:
+   \`\`\`bash
+   npm install --legacy-peer-deps --force
+   \`\`\`
 
-2. Run container (detached):
-   docker compose up -d nextjs_dashboard
+2. **Dev** mode:
+   \`\`\`bash
+   npm run dev
+   # open http://localhost:3000
+   \`\`\`
 
-3. Check logs:
-   docker compose logs -f nextjs_dashboard
+3. **Check** lint & build:
+   \`\`\`bash
+   ./check_dashboard.sh
+   \`\`\`
+   - logs go to \`dashboard_check.log\`.
 
-4. Access the dashboard (if mapped 3001:3000 in compose):
-   http://localhost:3001
+4. **Environment**:
+   - If your synergy backend is at \`http://localhost:9000\`, no changes needed.
+   - If in Docker Compose, set \`NEXT_PUBLIC_API_URL=http://python_agent:9000\` in \`.env\`.
 
-## Development
+## UI Layouts / External Code Integration
 
-- npm run dev → starts local dev on port 3000
-- npm install && npm run dev → test outside Docker
+If you want to incorporate external React/Tailwind code (like [ui-layouts](https://github.com/naymurdev/ui-layouts)):
 
-## Dockerfile Overview
-- Multi-stage build
-- “builder” stage → runs npm install + npm run build
-- final stage → minimal production image w/ .next + public + package.json
+- **Install** dependencies from that repo (e.g. \`framer-motion\`, \`clsx\`, \`tailwind-merge\`).
+- **Copy** the relevant hooks/components (File Upload, Embla Carousel, etc.) into \`components/\`.
+- Import them in your Next.js pages, e.g. \`import FileUpload from '@/components/FileUpload'\`.
+
+Example hooking up \`FileUpload\`:
+\`\`\`tsx
+import FileUpload from '@/components/FileUpload'
+
+export default function SomePage() {
+  return <FileUpload onFileSelected={(file) => console.log(file)} />
+}
+\`\`\`
+
+## Docker Build
+
+\`\`\`bash
+docker build -t vots-dashboard .
+docker run -p 3001:3000 vots-dashboard
+# open http://localhost:3001
+\`\`\`
+
+## Known Warnings
+
+- Some packages might produce deprecation messages (e.g. older versions).
+- We've pinned modern versions in \`package.json\`. 
+- If you still see \`ETARGET\` or \`no matching version found\`, double-check that your network or npm registry is up to date.
+
+Enjoy your synergy-based Next.js dashboard!

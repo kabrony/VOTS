@@ -1,0 +1,16 @@
+# A flexible set of packages to avoid "ResolutionImpossible" conflicts
+
+Flask>=2.3
+python-socketio>=5.8
+gevent>=23.7
+gevent-websocket>=0.10
+openai>=0.27
+google-generativeai>=0.1
+googlesearch-python>=1.1
+web3>=6.5
+python-dotenv>=1.0
+requests>=2.20
+
+# If you want extra libraries, e.g. for advanced usage:
+# uvicorn>=0.23
+# or if something specifically needs a pinned version, do so carefully

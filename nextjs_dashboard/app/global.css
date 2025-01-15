@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 
+  Additional styling for a high-contrast, 
+  "VSCode-like" dark theme with neon accents 
+*/
+
+html, body {
+  @apply bg-[#0e0e0e] text-[#e0e0e0];
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --accent: #4c84ff; /* Neon-like highlight, adapt as needed */
+  --card-bg: #1b1b1b;
+  --card-border: #2c2c2c;
+}
+
+a {
+  @apply text-[#4c84ff] no-underline;
+}
+a:hover {
+  @apply text-[#74aaff];
+}
